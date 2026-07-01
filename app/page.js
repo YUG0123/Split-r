@@ -1,65 +1,179 @@
+import Link from "next/link";
+import { ArrowRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import Image from "next/image";
-
+import { FEATURES, STEPS, TESTIMONIALS } from "@/lib/landing";
+import { Card, CardContent } from "@/components/ui/card";
+// Add these imports at the top
+// import { Card, CardContent } from "@/components/ui/card";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 export default function Home() {
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.js file.
+    <div className="flex flex-col pt-16">
+      {/* Hero Section */}
+      <section className="mt-20 pb-12 space-y-10 md:space-y-20 px-5">
+        <div className="container mx-auto px-4 md:px-6 text-center space-y-6">
+          <Badge variant="outline" className="bg-green-100 text-green-700">
+            Split expenses, Simplify life.
+          </Badge>
+          <h1 className="gradient-title mx-auto max-w-4xl text-4xl font-bold md:text-7xl">
+            The smartest way to split expenses with friends
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+          <p className="mx-auto max-w-[700px] text-gray-500 md:text-xl/relaxed">
+            Track shared expenses, split bills effortlessly, and settle up
+            quickly. Never worry about who owes who again
           </p>
+
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-8">
+            <Button
+              asChild
+              size="lg"
+              className="bg-green-600 hover:bg-green-700 text-white"
+            >
+              <Link href="/dashboard" className="flex items-center gap-2">
+                Get started
+                <ArrowRight size={16} className="ml-2" />
+              </Link>
+            </Button>
+
+            <Button
+              asChild
+              variant="outline"
+              size="lg"
+              className="border border-green-600 text-green-600 hover:bg-green-50"
+            >
+              <Link href="#how-it-works" className="flex items-center gap-2">
+                See how it works
+                <ArrowRight size={16} className="ml-2" />
+              </Link>
+            </Button>
+          </div>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
+
+        <div className="container mx-auto max-w-5xl overflow-hidden rounded-xl shadow-xl">
+          <div className="gradient p-1 aspect-[16/9]">
             <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
+              src="/hero.png"
+              width={1280}
+              height={720}
+              alt="Banner"
+              className="rounded-lg mx-auto"
+              priority
             />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+          </div>
         </div>
-      </main>
+      </section>
+
+      {/* Features Section */}
+      <section id="features" className="bg-gray-50 py-20">
+        <div className="container mx-auto px-4 md:px-6 text-center">
+          <Badge variant="outline" className="bg-green-100 text-green-700">
+            Features
+          </Badge>
+          <h2 className="gradient-title mt-2 text-3xl md:text-4xl">
+            Everything you need to split expenses
+          </h2>
+          <p className="mx-auto mt-3 max-w-[700px] text-gray-500 md:text-xl/relaxed">
+            Our platform provides all the tools you need to handle shared
+            expenses
+          </p>
+          <div className="mx-auto mt-12 grid max-w-5xl gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {FEATURES.map(({ title, Icon, bg, color, description }) => (
+              <Card
+                key={title}
+                className="flex flex-col items-center space-y-4 p-6 text-center"
+              >
+                <div className={`rounded-full p-3 ${bg}`}>
+                  <Icon className={`h-6 w-6 ${color}`} />
+                </div>
+                <h3 className="text-xl font-bold">{title}</h3>
+                <p className="text-gray-500">{description}</p>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* How it Works Section */}
+      <section id="how-it-works" className="py-20">
+        <div className="container mx-auto px-4 md:px-6 text-center">
+          <Badge variant="outline" className="bg-green-100 text-green-700">
+            How it works
+          </Badge>
+          <h2 className="gradient-title mt-2 text-3xl md:text-4xl">
+            Making splitting expenses easy
+          </h2>
+          <p className="mx-auto mt-3 max-w-[700px] text-gray-500 md:text-xl/relaxed">
+            Follow these simple steps
+          </p>
+          <div className="mx-auto mt-12 grid max-w-5xl gap-8 md:grid-cols-2 lg:grid-cols-3">
+            {STEPS.map(({ description, label, title }) => (
+              <div key={label} className="flex flex-col items-center space-y-4">
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-green-100 text-xl font-bold text-green-600">
+                  {label}
+                </div>
+                <h3 className="text-xl font-bold">{title}</h3>
+                <p className="text-gray-500 text-center">{description}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Testimonials Section */}
+      <section className="bg-gray-50 py-20">
+        <div className="container mx-auto px-4 md:px-6 text-center">
+          <Badge variant="outline" className="bg-green-100 text-green-700">
+            Testimonials
+          </Badge>
+          <h2 className="gradient-title mt-2 text-3xl md:text-4xl">
+            What our users say
+          </h2>
+          <p className="mx-auto mt-3 max-w-[700px] text-gray-500 md:text-xl/relaxed">
+            Don&apos;t just take our word for it
+          </p>
+          <div className="mx-auto mt-12 grid max-w-5xl gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {TESTIMONIALS.map(({ quote, name, role, image }) => (
+              <Card key={name} className="bg-white">
+                <CardContent className="pt-6">
+                  <p className="text-gray-500">{quote}</p>
+                  <div className="flex items-center space-x-3 mt-4">
+                    <Avatar>
+                      <AvatarImage src={image} alt={name} />
+                      <AvatarFallback>{name.charAt(0)}</AvatarFallback>
+                    </Avatar>
+                    <div className="text-left">
+                      <p className="font-semibold">{name}</p>
+                      <p className="text-sm text-gray-500">{role}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="py-20 gradient">
+        <div className="container mx-auto px-4 md:px-6 text-center space-y-6">
+          <h2 className="text-3xl font-extrabold tracking-tight md:text-4xl text-white">
+            Ready to simplify expense sharing?
+          </h2>
+
+          <p className="mx-auto max-w-[600px] text-green-100 md:text-xl/relaxed">
+            Join thousands of users who have made splitting expenses stress
+            free.
+          </p>
+
+          <Button asChild size="lg" className="bg-green-800 hover:opacity-90">
+            <Link href="/dashboard">
+              Get started
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </Link>
+          </Button>
+        </div>
+      </section>
     </div>
   );
 }
