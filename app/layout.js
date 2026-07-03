@@ -3,6 +3,7 @@ import "./globals.css";
 import { ConvexClientProvider } from "@/components/ui/convex-client-provider";
 import Header from "@/components/ui/header";
 import { ClerkProvider } from "@clerk/nextjs";
+import { Toaster } from "sonner";
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -22,19 +23,21 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <head>
-        <link rel="icon" href="/logos/logo2.png" sizes="any"/>
+        <link rel="icon" href="/logos/logo2.png" sizes="any" />
       </head>
-      
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen`}>
+
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen`}
+      >
         <ClerkProvider>
-        <ConvexClientProvider>
+          <ConvexClientProvider>
+            <Header />
 
-          <Header />
-
-          <main className="min-h-screen">
-            {children}
-          </main>
-        </ConvexClientProvider> 
+            <main className="min-h-screen">
+              {children}
+              <Toaster richColors />
+            </main>
+          </ConvexClientProvider>
         </ClerkProvider>
       </body>
     </html>
