@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react"; // Added useState hook import
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { Plus, Users, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -9,12 +9,29 @@ import { useConvexQuery } from "@/components/ui/hooks/use-convex-query";
 import { api } from "@/convex/_generated/api";
 import { BarLoader } from "react-spinners";
 import CreateGroupModal from "./_components/create-group-modal";
+import { useRouter, useSearchParams } from "next/navigation";
+
 const ContactsPage = () => {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
   // 1. Setup modal open/close state tracking
   const [isCreateGroupModalOpen, setIsCreateGroupModalOpen] = useState(false);
 
   // 2. Load contacts database payload
   const { data, isLoading } = useConvexQuery(api.contacts.getAllContacts);
+
+  useEffect(() => {
+    const createGroupParam = searchParams.get("createGroup");
+
+    if (createGroupParam === "true") {
+      setIsCreateGroupModalOpen(true);
+      const url = new URL(window.location.href);
+      url.searchParams.delete("createGroup");
+
+      router.replace(url.pathname + url.search);
+    }
+  }, [searchParams, router]);
 
   if (isLoading) {
     return (
@@ -31,7 +48,6 @@ const ContactsPage = () => {
       {/* Page Header */}
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-5xl font-bold tracking-tight">Contacts</h1>
-        {/* Fixed state setter spelling */}
         <Button onClick={() => setIsCreateGroupModalOpen(true)}>
           <Plus className="mr-2 h-4 w-4" />
           Create Group
@@ -110,11 +126,12 @@ const ContactsPage = () => {
         </div>
       </div>
 
-      {/* 3. Mount Mountable Control Interface Modal at root level */}
+      {/* 3. Mount Control Interface Modal at root level */}
+      {/* Fixed: Swapped routerServerGlobal out for router, converted string to backticks */}
       <CreateGroupModal
         isOpen={isCreateGroupModalOpen}
         onClose={() => setIsCreateGroupModalOpen(false)}
-        onSuccess={(groupId) => routerServerGlobal.push("/groups/${groupId}")}
+        onSuccess={(groupId) => router.push(`/groups/${groupId}`)}
       />
     </div>
   );
