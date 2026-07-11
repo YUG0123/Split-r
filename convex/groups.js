@@ -1,10 +1,11 @@
 import { v } from "convex/values";
 import { query } from "./_generated/server";
+import { getCurrentUser } from "./users";
 
 export const getGroupExpenses = query({
   args: { groupId: v.id("groups") },
   handler: async (ctx, { groupId }) => {
-    const currentUser = await ctx.runQuery(internal.users.getCurrentUser);
+    const currentUser = await getCurrentUser(ctx);
 
     const group = await ctx.db.get(groupId);
     if (!group) throw new Error("Group not found");
@@ -65,9 +66,25 @@ export const getGroupExpenses = query({
     }
     for (const s of settlements) {
       totals[s.paidByUserId] += s.amount;
-      totals[paidByUserId] -= s.amount;
+      totals[s.receivedByUserId] -= s.amount;
       ledger[s.paidByUserId][s.receivedByUserId] -= s.amount;
     }
+    ids.forEach((a) => {
+      ids.forEach((b) => {
+        if (a >= b) return;
+
+        const diff = ledger[a][b] - ledger[b][a];
+
+        if (diff > 0) {
+          ledger[a][b] = diff;
+          ledger[b][a] = 0;
+        } else {
+          ledger[b][a] = diff;
+          ledger[a][b] = 0;
+        }
+      });
+    });
+
     const balances = memberDetails.map((m) => ({
       ...m,
       totalBalance: totals[m.id],
@@ -96,5 +113,73 @@ export const getGroupExpenses = query({
       balances,
       userLookUpMap,
     };
+  },
+});
+
+export const getGroupOrMembers = query({
+  args: {
+    groupId: v.optional(v.id("groups")), // Optional - if provided, will return details for just this group
+  },
+  handler: async (ctx, args) => {
+    const currentUser = await getCurrentUser(ctx);
+
+    // Get all groups where the user is a member
+    const allGroups = await ctx.db.query("groups").collect();
+    const userGroups = allGroups.filter((group) =>
+      group.members.some((member) => member.userId === currentUser._id),
+    );
+
+    if (args.groupId) {
+      const selectedGroup = userGroups.find(
+        (group) => group._id === args.groupId,
+      );
+
+      if (!selectedGroup) {
+        throw new Error("Group not found or you are not a member");
+      }
+
+      const memberDetails = await Promise.all(
+        selectedGroup.members.map(async (member) => {
+          const user = await ctx.db.get(member.userId);
+          if (!user) return null;
+
+          return {
+            id: user._id,
+            name: user.name,
+            email: user.email,
+            imageUrl: user.imageUrl,
+            role: member.role,
+          };
+        }),
+      );
+
+      const validMembers = memberDetails.filter((member) => member !== null);
+
+      return {
+        selectedGroup: {
+          id: selectedGroup._id,
+          name: selectedGroup.name,
+          description: selectedGroup.description,
+          createdBy: selectedGroup.createdBy,
+          members: validMembers,
+        },
+        groups: userGroups.map((group) => ({
+          id: group._id,
+          name: group.name,
+          description: group.description,
+          memberCount: group.members.length,
+        })),
+      };
+    } else {
+      return {
+        selectedGroup: null,
+        groups: userGroups.map((group) => ({
+          id: group._id,
+          name: group.name,
+          description: group.description,
+          memberCount: group.members.length,
+        })),
+      };
+    }
   },
 });

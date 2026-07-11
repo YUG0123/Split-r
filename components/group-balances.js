@@ -1,9 +1,13 @@
-import { useConvexQuery } from "@/hooks/use-convex-query";
 import React from "react";
+import { ArrowUpCircle, ArrowDownCircle } from "lucide-react";
+import { api } from "@/convex/_generated/api";
+import { useConvexQuery } from "@/components/ui/hooks/use-convex-query";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const GroupBalances = ({ balances }) => {
-  //  Change line 7 to use your public endpoint version!
+  // Uses the working public endpoint definition
   const { data: currentUser } = useConvexQuery(api.users.getCurrentUserPublic);
+
   if (!balances?.length || !currentUser) {
     return (
       <div className="text-center py-4 text-muted-foreground">
@@ -42,21 +46,93 @@ const GroupBalances = ({ balances }) => {
       <div className="text-center pb-4 border-b">
         <p className="text-sm text-muted-foreground mb-1">Your balance</p>
         <p
-  className={`text-2xl font-bold ${
-    me.totalBalance > 0
-      ? "text-green-600"
-      : me.totalBalance < 0
-        ? "text-red-600"
-        : ""
-  }`}
->
+          className={`text-2xl font-bold ${
+            me.totalBalance > 0
+              ? "text-green-600"
+              : me.totalBalance < 0
+                ? "text-red-600"
+                : ""
+          }`}
+        >
           {me.totalBalance > 0
             ? `+$${me.totalBalance.toFixed(2)}`
             : me.totalBalance < 0
               ? `-$${Math.abs(me.totalBalance).toFixed(2)}`
               : "$0.00"}
-        </P>
+        </p>
       </div>
+
+      {isAllSettledUp ? (
+        <div className="text-center py-4">
+          <p className="text-muted-foreground">Everyone is settled up!</p>
+        </div>
+      ) : (
+        <div className="space-y-6">
+          {/* Owed to you section */}
+          {owedByMembers.length > 0 && (
+            <div>
+              <h3 className="text-sm font-medium flex items-center mb-3">
+                <ArrowUpCircle className="h-4 w-4 text-green-500 mr-2" />
+                Owed to you
+              </h3>
+
+              <div className="space-y-3">
+                {owedByMembers.map((member) => (
+                  <div
+                    key={member.id}
+                    className="flex items-center justify-between"
+                  >
+                    <div className="flex items-center gap-2">
+                      <Avatar className="h-8 w-8">
+                        <AvatarImage src={member.imageUrl} />
+                        <AvatarFallback>
+                          {member.name?.charAt(0) ?? "?"}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className="text-sm">{member.name}</span>
+                    </div>
+                    <span className="font-medium text-green-600">
+                      ${member.amount.toFixed(2)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* You owe section */}
+          {owingToMembers.length > 0 && (
+            <div>
+              <h3 className="text-sm font-medium flex items-center mb-3">
+                <ArrowDownCircle className="h-4 w-4 text-red-500 mr-2" />
+                You owe
+              </h3>
+
+              <div className="space-y-3">
+                {owingToMembers.map((member) => (
+                  <div
+                    key={member.id}
+                    className="flex items-center justify-between"
+                  >
+                    <div className="flex items-center gap-2">
+                      <Avatar className="h-8 w-8">
+                        <AvatarImage src={member.imageUrl} />
+                        <AvatarFallback>
+                          {member.name?.charAt(0) ?? "?"}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className="text-sm">{member.name}</span>
+                    </div>
+                    <span className="font-medium text-red-600">
+                      ${member.amount.toFixed(2)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };
