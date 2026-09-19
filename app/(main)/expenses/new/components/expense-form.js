@@ -28,6 +28,8 @@ import SplitSelector from "./split-selector";
 
 import { cn } from "@/lib/utils";
 import { getAllCategories } from "@/lib/expense-categories";
+import { split } from "postcss/lib/list";
+import { toast } from "sonner";
 const expenseSchema = z.object({
   description: z.string().min(1, "Description is required"),
   amount: z
@@ -71,9 +73,61 @@ const ExpenseForm = ({ type, onSuccess }) => {
       groupId: undefined,
     },
   });
-  const onSubmit = async (data) => {};
+  const onSubmit = async (data) => {
+    try {
+      const amount = parseFloat(data.amount);
+
+      const formattedSplits = splits.map((split) => ({
+        userId: split.userId,
+        amount: split.amount,
+        paid: split.userId === data.paidByUserId,
+      }));
+
+      const groupId = type === "group" ? selectedGroup?.id : undefined;
+
+      await createExpense({
+        description: data.description,
+        amount,
+        category: data.category || "Other",
+        date: data.date.getTime(),
+        paidByUserId: data.paidByUserId,
+        splitType: data.splitType,
+        splits: formattedSplits,
+        groupId,
+      });
+
+      toast.success("Expense created successfully!");
+      reset();
+      setParticipants([]);
+      setSplits([]);
+
+      if (type === "individual") {
+        const otherParticipant = participants.find(
+          (p) => p.id !== currentUser._id,
+        );
+        onSuccess?.(otherParticipant?.id);
+      } else {
+        onSuccess?.(selectedGroup?.id);
+      }
+    } catch (error) {
+      toast.error("Failed to create expense: " + error.message);
+    }
+  };
   const amountValue = watch("amount");
   const paidByUserId = watch("paidByUserId");
+  useEffect(() => {
+    if (participants.length === 0 && currentUser) {
+      // Always add the current user as a participant
+      setParticipants([
+        {
+          id: currentUser._id,
+          name: currentUser.name,
+          email: currentUser.email,
+          imageUrl: currentUser.imageUrl,
+        },
+      ]);
+    }
+  }, [currentUser, participants]);
   if (!currentUser) return null;
   return (
     <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
@@ -231,19 +285,37 @@ const ExpenseForm = ({ type, onSuccess }) => {
               <p className="text-sm text-muted-foreground">
                 Split equally among all participants
               </p>
-              <SplitSelector />
+              <SplitSelector
+                type="equal"
+                amount={parseFloat(amountValue) || 0}
+                participants={participants}
+                paidByUserId={paidByUserId}
+                onSplitsChange={setSplits}
+              />
             </TabsContent>
             <TabsContent value="percentage" className="pt-4">
               <p className="text-sm text-muted-foreground">
                 Split by percentage
               </p>
-              <SplitSelector />
+              <SplitSelector
+                type="percentage"
+                amount={parseFloat(amountValue) || 0}
+                participants={participants}
+                paidByUserId={paidByUserId}
+                onSplitsChange={setSplits}
+              />
             </TabsContent>
             <TabsContent value="exact" className="pt-4">
               <p className="text-sm text-muted-foreground">
                 Enter exact amounts
               </p>
-              <SplitSelector />
+              <SplitSelector
+                type="exact"
+                amount={parseFloat(amountValue) || 0}
+                participants={participants}
+                paidByUserId={paidByUserId}
+                onSplitsChange={setSplits}
+              />
             </TabsContent>
           </Tabs>
         </div>

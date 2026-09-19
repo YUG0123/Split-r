@@ -87,6 +87,7 @@ const PersonPage = () => {
           <div className="flex gap-2">
             <Button asChild variant="outline">
               <Link href={`/settlements/user/${params.id}`}>
+                {" "}
                 <ArrowLeftRight className="mr-2 h-4 w-4" />
                 Settle up
               </Link>

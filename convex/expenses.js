@@ -1,11 +1,11 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
-import { internal } from "./_generated/api";
+import { getCurrentUser } from "./users";
 
 export const getExpensesBetweenUsers = query({
   args: { userId: v.id("users") },
   handler: async (ctx, { userId }) => {
-    const me = await ctx.runQuery(internal.users.getCurrentUser);
+    const me = await getCurrentUser(ctx);
     if (me._id === userId) throw new Error("Cannot query yourself");
 
     const expensesMyPaid = await ctx.db
@@ -100,7 +100,7 @@ export const deleteExpense = mutation({
     expenseId: v.id("expenses"),
   },
   handler: async (ctx, args) => {
-    const user = await ctx.runQuery(internal.users.getCurrentUser);
+    const user = await getCurrentUser(ctx);
 
     const expense = await ctx.db.get(args.expenseId);
     if (!expense) {
@@ -136,7 +136,7 @@ export const createExpense = mutation({
     groupId: v.optional(v.id("groups")),
   },
   handler: async (ctx, args) => {
-    const user = await ctx.runQuery(internal.users.getCurrentUser);
+    const user = await getCurrentUser(ctx);
 
     if (args.groupId) {
       const group = await ctx.db.get(args.groupId);
@@ -172,5 +172,6 @@ export const createExpense = mutation({
       groupId: args.groupId,
       createdBy: user._id,
     });
+    return expenseId;
   },
 });

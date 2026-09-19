@@ -1,7 +1,11 @@
 import React from "react";
+import { api } from "@/convex/_generated/api";
+import { useConvexQuery } from "@/components/ui/hooks/use-convex-query";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 
 const GroupMembers = ({ members }) => {
-  const { data: currentUser } = useConvexQuery(api.users.getCurrentUser);
+  const { data: currentUser } = useConvexQuery(api.users.getCurrentUserPublic);
 
   if (!members || members.length === 0) {
     return (
@@ -13,9 +17,9 @@ const GroupMembers = ({ members }) => {
 
   return (
     <div className="space-y-3">
-      {members.map(() => {
-        const isCurrentUserurrentUser = members.id === currentUser?._id;
-        const isAdmin = members.role === "admin";
+      {members.map((member) => {
+        const isCurrentUser = member.id === currentUser?._id;
+        const isAdmin = member.role === "admin";
 
         return (
           <div key={member.id} className="flex items-center justify-between">

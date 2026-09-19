@@ -24,9 +24,7 @@ export const sendEmail = action({
       });
       return { success: true, id: result.id };
     } catch (error) {
-      // 🌟 Fixed: Changed curly braces to parentheses
       console.error("Failed to send email", error);
-      // 🌟 Fixed: Added proper space after return
       return { success: false, error: error.message };
     }
   },

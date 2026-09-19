@@ -18,7 +18,6 @@ import ExpenseList from "@/components/expense-list";
 import SettlementsList from "@/components/settlements-list";
 import GroupBalances from "@/components/group-balances";
 import GroupMembers from "@/components/group-members"; // Added missing import for group members
-
 const GroupPage = () => {
   const params = useParams();
   const router = useRouter();
@@ -71,7 +70,8 @@ const GroupPage = () => {
           </div>
           <div className="flex gap-2">
             <Button asChild variant="outline">
-              <Link href={`/settlements/user/${params.id}`}>
+              <Link href={`/settlements/group/${params.id}`}>
+                {" "}
                 <ArrowLeftRight className="mr-2 h-4 w-4" />
                 Settle up
               </Link>

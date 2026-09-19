@@ -2,6 +2,11 @@ import { internal } from "./_generated/api";
 import { mutation, internalQuery, query } from "./_generated/server";
 import { v } from "convex/values";
 
+const isUsableName = (val) =>
+  typeof val === "string" &&
+  val.trim().length > 0 &&
+  val.trim().toLowerCase() !== "anonymous";
+
 export const store = mutation({
   args: {},
   handler: async (ctx) => {
@@ -21,8 +26,13 @@ export const store = mutation({
       return user._id;
     }
 
-    const fallbackName =
-      identity.name || identity.givenName || identity.email.split("@")[0];
+    const fallbackName = isUsableName(identity.name)
+      ? identity.name
+      : isUsableName(identity.givenName)
+        ? identity.givenName
+        : identity.email
+          ? identity.email.split("@")[0]
+          : "User";
 
     return await ctx.db.insert("users", {
       tokenIdentifier: identity.tokenIdentifier,

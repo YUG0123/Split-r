@@ -79,7 +79,7 @@ export const getGroupExpenses = query({
           ledger[a][b] = diff;
           ledger[b][a] = 0;
         } else {
-          ledger[b][a] = diff;
+          ledger[b][a] = -diff;
           ledger[a][b] = 0;
         }
       });
