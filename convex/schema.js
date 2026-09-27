@@ -32,7 +32,9 @@ export default defineSchema({
     .index("by_user_and_group", ["paidByUserId", "groupId"])
     .index("by_date", ["date"]),
 
-  group: defineTable({
+  // FIX: was "group" (singular) — every query/insert in the codebase
+  // (groups.js, contacts.js, dashboard.js, seed.js) uses "groups" (plural).
+  groups: defineTable({
     name: v.string(),
     description: v.optional(v.string()),
     createdBy: v.id("users"),
