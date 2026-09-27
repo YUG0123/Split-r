@@ -5,11 +5,19 @@ export const getUserBalances = query({
   handler: async (ctx) => {
     const user = await ctx.runQuery(internal.users.getCurrentUser);
 
-    const expenses = (await ctx.db.query("expenses").collect()).filter(
+    // FIX: was `ctx.db.query("expenses").collect()` then filtering in JS —
+    // that pulls EVERY expense in the whole table (every user, every group)
+    // into memory on every dashboard load. We only need non-group expenses
+    // here, and there's already a "by_group" index for that.
+    const expenses = (
+      await ctx.db
+        .query("expenses")
+        .withIndex("by_group", (q) => q.eq("groupId", undefined))
+        .collect()
+    ).filter(
       (e) =>
-        !e.groupId &&
-        (e.paidByUserId === user._id ||
-          e.splits.some((s) => s.userId === user._id)),
+        e.paidByUserId === user._id ||
+        e.splits.some((s) => s.userId === user._id),
     );
 
     let youOwe = 0;
@@ -35,10 +43,15 @@ export const getUserBalances = query({
       }
     }
 
-    const settlements = (await ctx.db.query("settlements").collect()).filter(
-      (s) =>
-        !s.groupId &&
-        (s.paidByUserId === user._id || s.receivedByUserId === user._id),
+    // FIX: same problem — scope the settlements scan with the by_group
+    // index instead of collect()-ing the whole settlements table.
+    const settlements = (
+      await ctx.db
+        .query("settlements")
+        .withIndex("by_group", (q) => q.eq("groupId", undefined))
+        .collect()
+    ).filter(
+      (s) => s.paidByUserId === user._id || s.receivedByUserId === user._id,
     );
 
     for (const s of settlements) {

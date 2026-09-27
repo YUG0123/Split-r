@@ -143,11 +143,24 @@ export const createExpense = mutation({
       if (!group) {
         throw new Error("Group not found");
       }
-      const isMember = group.members.some(
-        (member) => member.userId === user._id,
-      );
-      if (!isMember) {
+
+      const memberIds = new Set(group.members.map((m) => m.userId));
+
+      if (!memberIds.has(user._id)) {
         throw new Error("You are not a member of this group");
+      }
+
+      // FIX: previously only the current user's membership was checked.
+      // Neither the payer nor the split participants were validated as
+      // actual group members, so a client could submit split entries for
+      // arbitrary user IDs. Validate both now.
+      if (!memberIds.has(args.paidByUserId)) {
+        throw new Error("Payer must be a member of this group");
+      }
+      for (const split of args.splits) {
+        if (!memberIds.has(split.userId)) {
+          throw new Error("All split participants must be group members");
+        }
       }
     }
 
