@@ -134,6 +134,11 @@ export const createExpense = mutation({
       }),
     ),
     groupId: v.optional(v.id("groups")),
+    // NEW: optional — if provided, this expense becomes a recurring
+    // template instead of a one-off expense.
+    recurringFrequency: v.optional(
+      v.union(v.literal("weekly"), v.literal("monthly")),
+    ),
   },
   handler: async (ctx, args) => {
     const user = await getCurrentUser(ctx);
@@ -143,11 +148,20 @@ export const createExpense = mutation({
       if (!group) {
         throw new Error("Group not found");
       }
-      const isMember = group.members.some(
-        (member) => member.userId === user._id,
-      );
-      if (!isMember) {
+
+      const memberIds = new Set(group.members.map((m) => m.userId));
+
+      if (!memberIds.has(user._id)) {
         throw new Error("You are not a member of this group");
+      }
+
+      if (!memberIds.has(args.paidByUserId)) {
+        throw new Error("Payer must be a member of this group");
+      }
+      for (const split of args.splits) {
+        if (!memberIds.has(split.userId)) {
+          throw new Error("All split participants must be group members");
+        }
       }
     }
 
@@ -161,6 +175,14 @@ export const createExpense = mutation({
       throw new Error("Split amounts must add up to the total expense amount");
     }
 
+    const recurring = args.recurringFrequency
+      ? {
+          frequency: args.recurringFrequency,
+          nextDueDate: advanceDate(args.date, args.recurringFrequency),
+          active: true,
+        }
+      : undefined;
+
     const expenseId = await ctx.db.insert("expenses", {
       description: args.description,
       amount: args.amount,
@@ -171,7 +193,39 @@ export const createExpense = mutation({
       splits: args.splits,
       groupId: args.groupId,
       createdBy: user._id,
+      recurring,
     });
     return expenseId;
   },
 });
+
+// Let a user turn off a recurring template without deleting its history.
+export const stopRecurringExpense = mutation({
+  args: { expenseId: v.id("expenses") },
+  handler: async (ctx, { expenseId }) => {
+    const user = await getCurrentUser(ctx);
+    const expense = await ctx.db.get(expenseId);
+    if (!expense) throw new Error("Expense not found");
+    if (expense.createdBy !== user._id && expense.paidByUserId !== user._id) {
+      throw new Error("You don't have permission to modify this expense");
+    }
+    if (!expense.recurring) return { success: true };
+
+    await ctx.db.patch(expenseId, {
+      recurring: { ...expense.recurring, active: false },
+    });
+    return { success: true };
+  },
+});
+
+// Exported so convex/inngest.js can reuse the exact same date-advance logic
+// the cron job needs — keeps the "how do we advance a cycle" rule in one place.
+export function advanceDate(timestamp, frequency) {
+  const d = new Date(timestamp);
+  if (frequency === "weekly") {
+    d.setDate(d.getDate() + 7);
+  } else {
+    d.setMonth(d.getMonth() + 1);
+  }
+  return d.getTime();
+}
