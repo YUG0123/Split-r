@@ -1,7 +1,7 @@
 import { v } from "convex/values";
 import { query } from "./_generated/server";
 import { getCurrentUser } from "./users";
-
+import { simplifyDebts } from "./lib/debtSimplification";
 export const getGroupExpenses = query({
   args: { groupId: v.id("groups") },
   handler: async (ctx, { groupId }) => {
@@ -181,5 +181,61 @@ export const getGroupOrMembers = query({
         })),
       };
     }
+  },
+});
+// --- ADD THIS to the bottom of your existing convex/groups.js ---
+// Also add this import at the top of the file, alongside your existing imports:
+//   import { simplifyDebts } from "./lib/debtSimplification";
+
+export const getGroupSettlementPlan = query({
+  args: { groupId: v.id("groups") },
+  handler: async (ctx, { groupId }) => {
+    const currentUser = await getCurrentUser(ctx);
+
+    const group = await ctx.db.get(groupId);
+    if (!group) throw new Error("Group not found");
+    if (!group.members.some((m) => m.userId === currentUser._id)) {
+      throw new Error("You are not a member of this group");
+    }
+
+    const expenses = await ctx.db
+      .query("expenses")
+      .withIndex("by_group", (q) => q.eq("groupId", groupId))
+      .collect();
+
+    const settlements = await ctx.db
+      .query("settlements")
+      .filter((q) => q.eq(q.field("groupId"), groupId))
+      .collect();
+
+    const ids = group.members.map((m) => m.userId);
+    const netBalances = Object.fromEntries(ids.map((id) => [id, 0]));
+
+    for (const exp of expenses) {
+      for (const split of exp.splits) {
+        if (split.userId === exp.paidByUserId || split.paid) continue;
+        netBalances[exp.paidByUserId] += split.amount;
+        netBalances[split.userId] -= split.amount;
+      }
+    }
+    for (const s of settlements) {
+      netBalances[s.paidByUserId] += s.amount;
+      netBalances[s.receivedByUserId] -= s.amount;
+    }
+
+    const transactions = simplifyDebts(netBalances);
+
+    // Attach display names so the UI doesn't need a second round trip
+    const userLookup = {};
+    for (const id of ids) {
+      const u = await ctx.db.get(id);
+      userLookup[id] = { name: u?.name ?? "Unknown", imageUrl: u?.imageUrl };
+    }
+
+    return transactions.map((t) => ({
+      ...t,
+      fromName: userLookup[t.from]?.name,
+      toName: userLookup[t.to]?.name,
+    }));
   },
 });
