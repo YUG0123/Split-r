@@ -218,8 +218,6 @@ export const stopRecurringExpense = mutation({
   },
 });
 
-// Exported so convex/inngest.js can reuse the exact same date-advance logic
-// the cron job needs — keeps the "how do we advance a cycle" rule in one place.
 export function advanceDate(timestamp, frequency) {
   const d = new Date(timestamp);
   if (frequency === "weekly") {
