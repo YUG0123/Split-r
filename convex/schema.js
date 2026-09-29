@@ -27,13 +27,20 @@ export default defineSchema({
     ),
     groupId: v.optional(v.id("groups")),
     createdBy: v.id("users"),
+    // NEW: present only on a "template" expense that should regenerate
+    // itself on a schedule. Regular one-off expenses omit this entirely.
+    recurring: v.optional(
+      v.object({
+        frequency: v.union(v.literal("weekly"), v.literal("monthly")),
+        nextDueDate: v.number(),
+        active: v.boolean(),
+      }),
+    ),
   })
     .index("by_group", ["groupId"])
     .index("by_user_and_group", ["paidByUserId", "groupId"])
     .index("by_date", ["date"]),
 
-  // FIX: was "group" (singular) — every query/insert in the codebase
-  // (groups.js, contacts.js, dashboard.js, seed.js) uses "groups" (plural).
   groups: defineTable({
     name: v.string(),
     description: v.optional(v.string()),

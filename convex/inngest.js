@@ -1,5 +1,6 @@
 import { v } from "convex/values";
-import { query } from "./_generated/server";
+import { query, mutation } from "./_generated/server";
+import { advanceDate } from "./expenses";
 
 export const getUsersWithOutstandingDebts = query({
   handler: async (ctx) => {
@@ -191,5 +192,57 @@ export const getUserMonthlyExpenses = query({
         isGroup: expense.groupId !== undefined,
       };
     });
+  },
+});
+
+// --- NEW: support functions for the recurring-expenses cron job ---
+// Public (not internal) because Inngest talks to Convex over the HTTP
+// client, which can only call public functions — matches the pattern
+// already used by getUsersWithOutstandingDebts / getUsersWithExpenses above.
+
+export const getDueRecurringExpenses = query({
+  handler: async (ctx) => {
+    const now = Date.now();
+    // No index on the nested "recurring" field, so this scans the table.
+    // Fine while the set of active recurring templates stays small;
+    // worth revisiting with a dedicated table if that changes.
+    const all = await ctx.db.query("expenses").collect();
+    return all.filter(
+      (e) => e.recurring?.active && e.recurring.nextDueDate <= now,
+    );
+  },
+});
+
+export const createExpenseFromRecurringTemplate = mutation({
+  args: { templateId: v.id("expenses") },
+  handler: async (ctx, { templateId }) => {
+    const template = await ctx.db.get(templateId);
+    if (!template || !template.recurring?.active) return { skipped: true };
+
+    const now = Date.now();
+
+    // Create the actual new expense instance for this cycle.
+    await ctx.db.insert("expenses", {
+      description: template.description,
+      amount: template.amount,
+      category: template.category,
+      date: now,
+      paidByUserId: template.paidByUserId,
+      splitType: template.splitType,
+      splits: template.splits.map((s) => ({ ...s, paid: false })),
+      groupId: template.groupId,
+      createdBy: template.createdBy,
+      // no `recurring` field — this is a one-off instance, not a template
+    });
+
+    // Advance the template itself to the next due date.
+    await ctx.db.patch(templateId, {
+      recurring: {
+        ...template.recurring,
+        nextDueDate: advanceDate(now, template.recurring.frequency),
+      },
+    });
+
+    return { success: true };
   },
 });

@@ -134,6 +134,11 @@ export const createExpense = mutation({
       }),
     ),
     groupId: v.optional(v.id("groups")),
+    // NEW: optional — if provided, this expense becomes a recurring
+    // template instead of a one-off expense.
+    recurringFrequency: v.optional(
+      v.union(v.literal("weekly"), v.literal("monthly")),
+    ),
   },
   handler: async (ctx, args) => {
     const user = await getCurrentUser(ctx);
@@ -150,10 +155,6 @@ export const createExpense = mutation({
         throw new Error("You are not a member of this group");
       }
 
-      // FIX: previously only the current user's membership was checked.
-      // Neither the payer nor the split participants were validated as
-      // actual group members, so a client could submit split entries for
-      // arbitrary user IDs. Validate both now.
       if (!memberIds.has(args.paidByUserId)) {
         throw new Error("Payer must be a member of this group");
       }
@@ -174,6 +175,14 @@ export const createExpense = mutation({
       throw new Error("Split amounts must add up to the total expense amount");
     }
 
+    const recurring = args.recurringFrequency
+      ? {
+          frequency: args.recurringFrequency,
+          nextDueDate: advanceDate(args.date, args.recurringFrequency),
+          active: true,
+        }
+      : undefined;
+
     const expenseId = await ctx.db.insert("expenses", {
       description: args.description,
       amount: args.amount,
@@ -184,7 +193,37 @@ export const createExpense = mutation({
       splits: args.splits,
       groupId: args.groupId,
       createdBy: user._id,
+      recurring,
     });
     return expenseId;
   },
 });
+
+// Let a user turn off a recurring template without deleting its history.
+export const stopRecurringExpense = mutation({
+  args: { expenseId: v.id("expenses") },
+  handler: async (ctx, { expenseId }) => {
+    const user = await getCurrentUser(ctx);
+    const expense = await ctx.db.get(expenseId);
+    if (!expense) throw new Error("Expense not found");
+    if (expense.createdBy !== user._id && expense.paidByUserId !== user._id) {
+      throw new Error("You don't have permission to modify this expense");
+    }
+    if (!expense.recurring) return { success: true };
+
+    await ctx.db.patch(expenseId, {
+      recurring: { ...expense.recurring, active: false },
+    });
+    return { success: true };
+  },
+});
+
+export function advanceDate(timestamp, frequency) {
+  const d = new Date(timestamp);
+  if (frequency === "weekly") {
+    d.setDate(d.getDate() + 7);
+  } else {
+    d.setMonth(d.getMonth() + 1);
+  }
+  return d.getTime();
+}
