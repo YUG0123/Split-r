@@ -9,8 +9,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-const CategorySelector = ({ categories, onChange }) => {
-  const [selectedCategory, setSelectedCategory] = useState("");
+const CategorySelector = ({ categories, onChange, value }) => {
+  const [selectedCategory, setSelectedCategory] = useState(value || "");
 
   const handleCategoryChange = (categoryId) => {
     setSelectedCategory(categoryId);
@@ -19,6 +19,15 @@ const CategorySelector = ({ categories, onChange }) => {
       onChange(categoryId);
     }
   };
+
+  // NEW: lets a parent (e.g. after a receipt scan) externally set the
+  // selected category. Purely additive — if no `value` prop is passed,
+  // this effect never fires and existing behavior is unchanged.
+  useEffect(() => {
+    if (value && value !== selectedCategory) {
+      setSelectedCategory(value);
+    }
+  }, [value]);
 
   if (!categories || categories.length === 0) {
     return <div> No categories available</div>;
