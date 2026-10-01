@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { BarLoader } from "react-spinners";
 import { ArrowLeft, ArrowLeftRight, PlusCircle, Users } from "lucide-react";
-
+import SettlementPlan from "@/components/settlement-plan";
 // Convex API Imports
 import { api } from "@/convex/_generated/api";
 import { useConvexQuery } from "@/components/ui/hooks/use-convex-query";
@@ -133,8 +133,17 @@ const GroupPage = () => {
           </Tabs>
         </div>
 
-        {/* Sidebar Column - Members List */}
-        <div className="w-full">
+        {/* Sidebar Column - Settlement Plan & Members List */}
+        <div className="w-full space-y-6">
+          <Card className="w-full">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-xl">Suggested settlements</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <SettlementPlan groupId={params.id} />
+            </CardContent>
+          </Card>
+
           <Card className="w-full">
             <CardHeader className="pb-2">
               <CardTitle className="text-xl">Group Members</CardTitle>
