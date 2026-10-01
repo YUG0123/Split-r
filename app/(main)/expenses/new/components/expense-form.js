@@ -25,6 +25,7 @@ import CategorySelector from "./category-selector";
 import GroupSelector from "./group-selector";
 import ParticipantSelector from "./participant-selector";
 import SplitSelector from "./split-selector";
+import ReceiptUpload from "@/components/receipt-upload";
 
 import { cn } from "@/lib/utils";
 import { getAllCategories } from "@/lib/expense-categories";
@@ -113,8 +114,25 @@ const ExpenseForm = ({ type, onSuccess }) => {
       toast.error("Failed to create expense: " + error.message);
     }
   };
+
+  // NEW: prefill the form from a scanned receipt. Only overwrites a
+  // field when Gemini actually returned a confident value for it.
+  const handleReceiptScanned = (data) => {
+    if (data.description) setValue("description", data.description);
+    if (data.amount != null) setValue("amount", String(data.amount));
+    if (data.category) setValue("category", data.category);
+    if (data.date) {
+      const parsedDate = new Date(data.date);
+      if (!isNaN(parsedDate.getTime())) {
+        setSelectedDate(parsedDate);
+        setValue("date", parsedDate);
+      }
+    }
+  };
+
   const amountValue = watch("amount");
   const paidByUserId = watch("paidByUserId");
+  const categoryValue = watch("category");
   useEffect(() => {
     if (participants.length === 0 && currentUser) {
       // Always add the current user as a participant
@@ -132,6 +150,10 @@ const ExpenseForm = ({ type, onSuccess }) => {
   return (
     <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
       <div className="space-y-4">
+        <div className="flex justify-end">
+          <ReceiptUpload onScanned={handleReceiptScanned} />
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label htmlFor="description">Description</Label>
@@ -169,6 +191,7 @@ const ExpenseForm = ({ type, onSuccess }) => {
 
             <CategorySelector
               categories={categories || []}
+              value={categoryValue}
               onChange={(categoryId) => {
                 if (categoryId) {
                   setValue("category", categoryId);
