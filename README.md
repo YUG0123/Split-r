@@ -2,7 +2,7 @@
 
 A full-stack expense-splitting app (Splitwise-style) with real-time balances, group expense tracking, and AI-generated spending insights.
 
-**Live demo:** _add your deployed Vercel URL here_
+**Live demo:** https://split-r-phi.vercel.app
 
 ---
 
